@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <title>CKLucas Chat</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #0e1015;
+      color: #fff;
+      padding: 20px;
+    }
+    #messages {
+      background: #1c1f26;
+      border-radius: 10px;
+      padding: 10px;
+      height: 300px;
+      overflow-y: scroll;
+      margin-bottom: 10px;
+    }
+    input, button {
+      padding: 10px;
+      font-size: 1rem;
+      margin-top: 5px;
+    }
+    input {
+      width: 200px;
+    }
+  </style>
+</head>
+<body>
+  <h1>💬 CKLucas Chat</h1>
+  <div id="messages">Berichten laden...</div>
+  <input id="name" placeholder="Jouw naam" />
+  <input id="message" placeholder="Typ je bericht..." />
+  <button onclick="sendMessage()">Verstuur</button>
+
+  <script type="module">
+    // Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD4g0elb--0OWjA89fsPnHFOJ1zOdNXdSY",
+      authDomain: "chat-5cf62.firebaseapp.com",
+      projectId: "chat-5cf62",
+      storageBucket: "chat-5cf62.firebasestorage.app",
+      messagingSenderId: "735833766122",
+      appId: "1:735833766122:web:b92bbbdca27bbaf1d5ff93"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const chatRef = collection(db, "messages");
+
+    const messagesDiv = document.getElementById("messages");
+
+    const q = query(chatRef, orderBy("timestamp"));
+    onSnapshot(q, snapshot => {
+      messagesDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        messagesDiv.innerHTML += `<p><strong>${data.name}:</strong> ${data.message}</p>`;
+      });
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+
+    async function sendMessage() {
+      const name = document.getElementById("name").value.trim();
+      const message = document.getElementById("message").value.trim();
+      if (!name || !message) return;
+
+      await addDoc(chatRef, {
+        name,
+        message,
+        timestamp: serverTimestamp()
+      });
+
+      document.getElementById("message").value = "";
+    }
+  </script>
+</body>
+</html>
