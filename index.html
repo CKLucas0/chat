@@ -5,11 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Chat App</title>
   <style>
-    /* Basisreset */
     * {
       box-sizing: border-box;
     }
-
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f0f2f5;
@@ -19,7 +17,6 @@
       height: 100vh;
       margin: 0;
     }
-
     .chat-container {
       background: #fff;
       width: 400px;
@@ -31,7 +28,6 @@
       flex-direction: column;
       overflow: hidden;
     }
-
     .chat-header {
       background-color: #4a90e2;
       color: white;
@@ -40,14 +36,12 @@
       font-weight: 700;
       text-align: center;
     }
-
     #chatbox {
       flex-grow: 1;
       padding: 15px;
       overflow-y: auto;
       background: #e9ebee;
     }
-
     #chatbox p {
       background: #4a90e2;
       color: white;
@@ -58,21 +52,18 @@
       word-wrap: break-word;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
     #chatbox p.self {
       background: #f1f0f0;
       color: #333;
       margin-left: auto;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-
     .chat-input-area {
       display: flex;
       padding: 15px;
       background: #fff;
       border-top: 1px solid #ccc;
     }
-
     #message {
       flex-grow: 1;
       padding: 12px 15px;
@@ -82,12 +73,10 @@
       outline: none;
       transition: border-color 0.3s ease;
     }
-
     #message:focus {
       border-color: #4a90e2;
       box-shadow: 0 0 5px rgba(74, 144, 226, 0.7);
     }
-
     button {
       margin-left: 12px;
       background: #4a90e2;
@@ -100,21 +89,16 @@
       font-size: 1rem;
       transition: background-color 0.3s ease;
     }
-
     button:hover {
       background: #357ABD;
     }
-
-    /* Scrollbar stijl */
     #chatbox::-webkit-scrollbar {
       width: 8px;
     }
-
     #chatbox::-webkit-scrollbar-thumb {
       background: #4a90e2;
       border-radius: 10px;
     }
-
     #chatbox::-webkit-scrollbar-track {
       background: #e9ebee;
     }
@@ -138,29 +122,34 @@
     const messageInput = document.getElementById('message');
     const sendBtn = document.getElementById('sendBtn');
 
-    function appendMessage(msg, self = false) {
+    function appendMessage(msgData) {
       const p = document.createElement('p');
-      p.textContent = msg;
-      if (self) p.classList.add('self');
+      p.textContent = msgData.text;
+      if (msgData.id === socket.id) {
+        p.classList.add('self');
+      }
       chatbox.appendChild(p);
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
-    // Oude berichten ontvangen en tonen
+    // Eerst de oude berichten laden
     socket.on("chat history", (msgs) => {
       msgs.forEach(msg => appendMessage(msg));
     });
 
-    // Nieuwe berichten van anderen ontvangen
+    // Nieuwe berichten ontvangen
     socket.on("chat message", (msg) => {
-      appendMessage(msg);
+      // Voeg alleen toe als het niet je eigen bericht is (want dat wordt niet meteen toegevoegd bij verzenden)
+      if (msg.id !== socket.id) {
+        appendMessage(msg);
+      }
     });
 
     sendBtn.addEventListener('click', () => {
       const msg = messageInput.value.trim();
-      if (msg === '') return;
+      if (!msg) return;
       socket.emit('chat message', msg);
-      appendMessage(msg, true); // Eigen bericht rechts tonen
+      appendMessage({ id: socket.id, text: msg }); // Voeg eigen bericht direct toe
       messageInput.value = '';
       messageInput.focus();
     });
