@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Groepschat App met Reset</title>
+  <title>Groepschat App</title>
   <style>
     * {
       box-sizing: border-box;
@@ -128,24 +128,6 @@
       border-color: #4a90e2;
       box-shadow: 0 0 5px rgba(74, 144, 226, 0.7);
     }
-
-    /* Reset knop stijl */
-    #resetBtn {
-      margin: 10px 15px 0 15px;
-      background: #e74c3c;
-      color: white;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.9rem;
-      align-self: flex-start;
-      transition: background-color 0.3s ease;
-    }
-    #resetBtn:hover {
-      background: #c0392b;
-    }
   </style>
 </head>
 <body>
@@ -162,7 +144,6 @@
     <!-- Chat scherm (verborgen bij start) -->
     <div id="chat" style="display:none; flex-direction: column; height: 100%;">
       <div class="header">Groepschat App</div>
-      <button id="resetBtn">Reset Chat</button>
       <div id="chatbox"></div>
       <div class="chat-input-area">
         <input id="message" type="text" placeholder="Typ hier je bericht..." autocomplete="off" />
@@ -184,7 +165,6 @@
     const chatbox = document.getElementById('chatbox');
     const messageInput = document.getElementById('message');
     const sendBtn = document.getElementById('sendBtn');
-    const resetBtn = document.getElementById('resetBtn');
 
     let username = null;
 
@@ -233,7 +213,7 @@
       if (!text) return;
 
       const msgData = { text, name: username };
-      appendMessage({ id: socket.id, text, name: username });  // direct toevoegen bij eigen scherm
+      appendMessage({ id: socket.id, text, name: username });
 
       socket.emit("chat message", msgData);
       messageInput.value = "";
@@ -244,19 +224,6 @@
       if (e.key === "Enter") {
         sendBtn.click();
       }
-    });
-
-    // Reset chat knop
-    resetBtn.addEventListener('click', () => {
-      if (confirm('Weet je zeker dat je de chat wilt resetten?')) {
-        socket.emit('reset chat');
-      }
-    });
-
-    // Als chat wordt gereset
-    socket.on('chat history', (msgs) => {
-      chatbox.innerHTML = "";
-      msgs.forEach(msg => appendMessage(msg));
     });
   </script>
 
