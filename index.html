@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Chat App</title>
+  <title>Groepschat App</title>
   <style>
     * {
       box-sizing: border-box;
@@ -11,24 +11,24 @@
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #f0f2f5;
+      margin: 0;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
-      margin: 0;
     }
-    .chat-container {
-      background: #fff;
+    .container {
+      background: white;
       width: 400px;
       max-width: 95vw;
-      height: 600px;
       border-radius: 8px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      overflow: hidden;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      height: 600px;
     }
-    .chat-header {
+    .header {
       background-color: #4a90e2;
       color: white;
       padding: 20px;
@@ -51,12 +51,23 @@
       max-width: 75%;
       word-wrap: break-word;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
     }
     #chatbox p.self {
       background: #f1f0f0;
       color: #333;
       margin-left: auto;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    #chatbox p .name {
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      display: block;
+      color: #eee;
+    }
+    #chatbox p.self .name {
+      color: #555;
     }
     .chat-input-area {
       display: flex;
@@ -92,40 +103,81 @@
     button:hover {
       background: #357ABD;
     }
-    #chatbox::-webkit-scrollbar {
-      width: 8px;
+
+    /* Naam invoer scherm */
+    #login {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      padding: 20px;
     }
-    #chatbox::-webkit-scrollbar-thumb {
-      background: #4a90e2;
-      border-radius: 10px;
+    #username {
+      padding: 12px 15px;
+      font-size: 1rem;
+      border: 1px solid #ccc;
+      border-radius: 25px;
+      width: 100%;
+      max-width: 300px;
+      margin-bottom: 20px;
+      outline: none;
+      transition: border-color 0.3s ease;
     }
-    #chatbox::-webkit-scrollbar-track {
-      background: #e9ebee;
+    #username:focus {
+      border-color: #4a90e2;
+      box-shadow: 0 0 5px rgba(74, 144, 226, 0.7);
     }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">Chat App</div>
-    <div id="chatbox"></div>
-    <div class="chat-input-area">
-      <input id="message" type="text" placeholder="Typ hier je bericht..." autocomplete="off" />
-      <button id="sendBtn">Verzend</button>
+
+  <div class="container">
+
+    <!-- Naam invoer scherm -->
+    <div id="login">
+      <h2>Voer je naam in</h2>
+      <input id="username" type="text" placeholder="Jouw naam..." autocomplete="off" />
+      <button id="loginBtn">Start Chat</button>
     </div>
+
+    <!-- Chat scherm (verborgen bij start) -->
+    <div id="chat" style="display:none; flex-direction: column; height: 100%;">
+      <div class="header">Groepschat App</div>
+      <div id="chatbox"></div>
+      <div class="chat-input-area">
+        <input id="message" type="text" placeholder="Typ hier je bericht..." autocomplete="off" />
+        <button id="sendBtn">Verzend</button>
+      </div>
+    </div>
+
   </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io("https://3256e5d6-cdb9-4d02-9bf3-77cce0c5e9b1-00-1vrnp1t0wf7fg.riker.replit.dev/");
 
+    const loginDiv = document.getElementById('login');
+    const chatDiv = document.getElementById('chat');
+    const usernameInput = document.getElementById('username');
+    const loginBtn = document.getElementById('loginBtn');
+
     const chatbox = document.getElementById('chatbox');
     const messageInput = document.getElementById('message');
     const sendBtn = document.getElementById('sendBtn');
 
-    // Functie om een bericht toe te voegen aan de chatbox
+    let username = null;
+
     function appendMessage(msgData) {
       const p = document.createElement('p');
-      p.textContent = msgData.text; // Let op: alleen de tekst weergeven, niet het hele object
+      // Naam + bericht
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = msgData.name || "Anon";
+      nameSpan.classList.add('name');
+
+      p.appendChild(nameSpan);
+      p.appendChild(document.createTextNode(msgData.text));
+
       if (msgData.id === socket.id) {
         p.classList.add('self');
       }
@@ -133,35 +185,51 @@
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
-    // Oude berichten ontvangen en tonen
+    loginBtn.addEventListener('click', () => {
+      const name = usernameInput.value.trim();
+      if (!name) {
+        alert("Voer alsjeblieft een naam in.");
+        return;
+      }
+      username = name;
+      loginDiv.style.display = 'none';
+      chatDiv.style.display = 'flex';
+
+      // Na inloggen alle oude berichten ophalen
+      socket.emit('join', username);
+    });
+
+    // Oude berichten ontvangen
     socket.on("chat history", (msgs) => {
+      chatbox.innerHTML = "";
       msgs.forEach(msg => appendMessage(msg));
     });
 
     // Nieuwe berichten ontvangen
     socket.on("chat message", (msg) => {
-      // Voeg alleen toe als het bericht niet van jezelf is, want die voeg je al direct toe
+      // Alleen toevoegen als het niet je eigen bericht is (eigen bericht wordt direct getoond bij verzenden)
       if (msg.id !== socket.id) {
         appendMessage(msg);
       }
     });
 
-    // Bericht verzenden bij klikken op knop
     sendBtn.addEventListener('click', () => {
       const msg = messageInput.value.trim();
       if (!msg) return;
-      socket.emit('chat message', msg);
-      appendMessage({ id: socket.id, text: msg }); // Voeg eigen bericht direct toe
+      // Verstuur bericht mét naam
+      socket.emit('chat message', { text: msg, name: username });
+      appendMessage({ id: socket.id, text: msg, name: username }); // Toon direct eigen bericht
       messageInput.value = '';
       messageInput.focus();
     });
 
-    // Bericht verzenden met Enter-toets
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         sendBtn.click();
       }
     });
+
   </script>
+
 </body>
 </html>
