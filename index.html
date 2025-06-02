@@ -1,25 +1,174 @@
 <!DOCTYPE html>
-<html>
-<head><title>Chat</title></head>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat App</title>
+  <style>
+    /* Basisreset */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f0f2f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .chat-container {
+      background: #fff;
+      width: 400px;
+      max-width: 95vw;
+      height: 600px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background-color: #4a90e2;
+      color: white;
+      padding: 20px;
+      font-size: 1.25rem;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    #chatbox {
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #e9ebee;
+    }
+
+    #chatbox p {
+      background: #4a90e2;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 20px;
+      margin: 8px 0;
+      max-width: 75%;
+      word-wrap: break-word;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #chatbox p.self {
+      background: #f1f0f0;
+      color: #333;
+      margin-left: auto;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    .chat-input-area {
+      display: flex;
+      padding: 15px;
+      background: #fff;
+      border-top: 1px solid #ccc;
+    }
+
+    #message {
+      flex-grow: 1;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 25px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s ease;
+    }
+
+    #message:focus {
+      border-color: #4a90e2;
+      box-shadow: 0 0 5px rgba(74, 144, 226, 0.7);
+    }
+
+    button {
+      margin-left: 12px;
+      background: #4a90e2;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background: #357ABD;
+    }
+
+    /* Scrollbar stijl */
+    #chatbox::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #chatbox::-webkit-scrollbar-thumb {
+      background: #4a90e2;
+      border-radius: 10px;
+    }
+
+    #chatbox::-webkit-scrollbar-track {
+      background: #e9ebee;
+    }
+  </style>
+</head>
 <body>
-  <div id="chatbox"></div>
-  <input id="message" placeholder="Typ iets..." />
-  <button onclick="sendMessage()">Verzend</button>
+  <div class="chat-container">
+    <div class="chat-header">Chat App</div>
+    <div id="chatbox"></div>
+    <div class="chat-input-area">
+      <input id="message" type="text" placeholder="Typ hier je bericht..." autocomplete="off" />
+      <button id="sendBtn">Verzend</button>
+    </div>
+  </div>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
   <script>
     const socket = io("https://3256e5d6-cdb9-4d02-9bf3-77cce0c5e9b1-00-1vrnp1t0wf7fg.riker.replit.dev/");
 
-    function sendMessage() {
-      const msg = document.getElementById("message").value;
-      socket.emit("chat message", msg);
-      document.getElementById("message").value = "";
+    const chatbox = document.getElementById('chatbox');
+    const messageInput = document.getElementById('message');
+    const sendBtn = document.getElementById('sendBtn');
+
+    function appendMessage(msg, self = false) {
+      const p = document.createElement('p');
+      p.textContent = msg;
+      if (self) p.classList.add('self');
+      chatbox.appendChild(p);
+      chatbox.scrollTop = chatbox.scrollHeight;
     }
 
+    // Oude berichten ontvangen en tonen
+    socket.on("chat history", (msgs) => {
+      msgs.forEach(msg => appendMessage(msg));
+    });
+
+    // Nieuwe berichten van anderen ontvangen
     socket.on("chat message", (msg) => {
-      const chatbox = document.getElementById("chatbox");
-      chatbox.innerHTML += `<p>${msg}</p>`;
-      chatbox.scrollTop = chatbox.scrollHeight;
+      appendMessage(msg);
+    });
+
+    sendBtn.addEventListener('click', () => {
+      const msg = messageInput.value.trim();
+      if (msg === '') return;
+      socket.emit('chat message', msg);
+      appendMessage(msg, true); // Eigen bericht rechts tonen
+      messageInput.value = '';
+      messageInput.focus();
+    });
+
+    messageInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+      }
     });
   </script>
 </body>
