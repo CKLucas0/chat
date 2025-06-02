@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Live Chat</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+<head><title>Chat</title></head>
 <body>
-  <h1>Chat</h1>
   <div id="chatbox"></div>
-  <input type="text" id="message" placeholder="Typ een bericht">
+  <input id="message" placeholder="Typ iets..." />
   <button onclick="sendMessage()">Verzend</button>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-  <script src="script.js"></script>
+  <script>
+    const socket = io("https://3256e5d6-cdb9-4d02-9bf3-77cce0c5e9b1-00-1vrnp1t0wf7fg.riker.replit.dev/");
+
+    function sendMessage() {
+      const msg = document.getElementById("message").value;
+      socket.emit("chat message", msg);
+      document.getElementById("message").value = "";
+    }
+
+    socket.on("chat message", (msg) => {
+      const chatbox = document.getElementById("chatbox");
+      chatbox.innerHTML += `<p>${msg}</p>`;
+      chatbox.scrollTop = chatbox.scrollHeight;
+    });
+  </script>
 </body>
 </html>
