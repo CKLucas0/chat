@@ -122,9 +122,10 @@
     const messageInput = document.getElementById('message');
     const sendBtn = document.getElementById('sendBtn');
 
+    // Functie om een bericht toe te voegen aan de chatbox
     function appendMessage(msgData) {
       const p = document.createElement('p');
-      p.textContent = msgData.text;
+      p.textContent = msgData.text; // Let op: alleen de tekst weergeven, niet het hele object
       if (msgData.id === socket.id) {
         p.classList.add('self');
       }
@@ -132,19 +133,20 @@
       chatbox.scrollTop = chatbox.scrollHeight;
     }
 
-    // Eerst de oude berichten laden
+    // Oude berichten ontvangen en tonen
     socket.on("chat history", (msgs) => {
       msgs.forEach(msg => appendMessage(msg));
     });
 
     // Nieuwe berichten ontvangen
     socket.on("chat message", (msg) => {
-      // Voeg alleen toe als het niet je eigen bericht is (want dat wordt niet meteen toegevoegd bij verzenden)
+      // Voeg alleen toe als het bericht niet van jezelf is, want die voeg je al direct toe
       if (msg.id !== socket.id) {
         appendMessage(msg);
       }
     });
 
+    // Bericht verzenden bij klikken op knop
     sendBtn.addEventListener('click', () => {
       const msg = messageInput.value.trim();
       if (!msg) return;
@@ -154,6 +156,7 @@
       messageInput.focus();
     });
 
+    // Bericht verzenden met Enter-toets
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
         sendBtn.click();
